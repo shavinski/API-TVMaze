@@ -15,16 +15,23 @@ const TV_MAZE_URL = "http://api.tvmaze.com"
 
 async function getShowsByTerm(term) {
   const show = $("#searchForm-term").val();
-  const showData = await axios.get(`${TV_MAZE_URL}/search/shows`, {params: {
+  const showsData = await axios.get(`${TV_MAZE_URL}/search/shows`, {params: {
     q: show
-    }
-  })
-  console.log("showData=", showData);
+  }
+});
 
-  // ADD: Remove placeholder & make request to TVMaze search shows API.
 
-  // return [
-  // ]
+for(let show of showsData.data) {
+  let imageNotFoundUrl = undefined;
+  if(show.show.image === null) {
+    imageNotFoundUrl = 'https://cdn-icons-png.flaticon.com/512/2748/2748558.png';
+    show.show.image = imageNotFoundUrl;
+  }
+}
+
+console.log('showsData', showsData);
+// ADD: Remove placeholder & make request to TVMaze search shows API.
+  return showData.data;
 }
 
 
