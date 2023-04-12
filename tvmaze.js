@@ -13,6 +13,19 @@ const TV_MAZE_URL = "http://api.tvmaze.com"
  *    (if no image URL given by API, put in a default image URL)
  */
 
+function findNullUrl(showsData) {
+
+  for(let show of showsData) {
+    let imageNotFoundUrl = undefined;
+    if(show.show.image === null) {
+      imageNotFoundUrl = 'https://tinyurl.com/tv-missing';
+      show.show.image = imageNotFoundUrl;
+    }
+  }
+
+  return showsData;
+}
+
 async function getShowsByTerm(term) {
   const show = $("#searchForm-term").val();
   const showsData = await axios.get(`${TV_MAZE_URL}/search/shows`, {params: {
@@ -20,18 +33,10 @@ async function getShowsByTerm(term) {
   }
 });
 
-
-for(let show of showsData.data) {
-  let imageNotFoundUrl = undefined;
-  if(show.show.image === null) {
-    imageNotFoundUrl = 'https://cdn-icons-png.flaticon.com/512/2748/2748558.png';
-    show.show.image = imageNotFoundUrl;
-  }
-}
-
-console.log('showsData', showsData);
 // ADD: Remove placeholder & make request to TVMaze search shows API.
-  return showData.data;
+
+  console.log('showsData', findNullUrl(showsData.data));
+  return findNullUrl(showsData.data)
 }
 
 
