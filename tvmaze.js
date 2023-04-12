@@ -13,13 +13,13 @@ const TV_MAZE_URL = "http://api.tvmaze.com"
  *    (if no image URL given by API, put in a default image URL)
  */
 
-function findNullUrl(showsData) {
+function findImgNull(showsData) {
 
   for(let show of showsData) {
-    let imageNotFoundUrl = undefined;
+    const imageNotFoundUrl = 'https://cdn-icons-png.flaticon.com/512/2748/2748558.png';
+
     if(show.show.image === null) {
-      imageNotFoundUrl = 'https://tinyurl.com/tv-missing';
-      show.show.image = imageNotFoundUrl;
+      show.show.image = {medium: imageNotFoundUrl};
     }
   }
 
@@ -27,16 +27,13 @@ function findNullUrl(showsData) {
 }
 
 async function getShowsByTerm(term) {
-  const show = $("#searchForm-term").val();
   const showsData = await axios.get(`${TV_MAZE_URL}/search/shows`, {params: {
-    q: show
-  }
-});
+      q: term
+    }
+  });
 
-// ADD: Remove placeholder & make request to TVMaze search shows API.
-
-  console.log('showsData', findNullUrl(showsData.data));
-  return findNullUrl(showsData.data)
+  // console.log('showsData', findImgNull(showsData.data));
+  return findImgNull(showsData.data)
 }
 
 
@@ -50,15 +47,15 @@ function displayShows(shows) {
 
   for (const show of shows) {
     const $show = $(`
-        <div data-show-id="${show.id}" class="Show col-md-12 col-lg-6 mb-4">
+        <div data-show-id="${show.show.id}" class="Show col-md-12 col-lg-6 mb-4">
          <div class="media">
            <img
-              src="http://static.tvmaze.com/uploads/images/medium_portrait/160/401704.jpg"
+              src="${show.show.image.medium}"
               alt="Bletchly Circle San Francisco"
               class="w-25 me-3">
            <div class="media-body">
-             <h5 class="text-primary">${show.name}</h5>
-             <div><small>${show.summary}</small></div>
+             <h5 class="text-primary">${show.show.name}</h5>
+             <div><small>${show.show.summary}</small></div>
              <button class="btn btn-outline-light btn-sm Show-getEpisodes">
                Episodes
              </button>
@@ -68,6 +65,7 @@ function displayShows(shows) {
       `);
 
     $showsList.append($show);
+    console.log(show.show.id)
   }
 }
 
@@ -94,7 +92,9 @@ $searchForm.on("submit", async function handleSearchForm (evt) {
  *      { id, name, season, number }
  */
 
-// async function getEpisodesOfShow(id) { }
+async function getEpisodesOfShow(id) {
+  const episodeInfo = await axios.get(`${TV_MAZE_URL}/shows/${id}/episodes`);
+}
 
 /** Write a clear docstring for this function... */
 
@@ -102,18 +102,3 @@ $searchForm.on("submit", async function handleSearchForm (evt) {
 
 // add other functions that will be useful / match our structure & design
 // {
-    //   id: 1767,
-    //   name: "The Bletchley Circle",
-    //   summary:
-    //     `<p><b>The Bletchley Circle</b> follows the journey of four ordinary
-    //        women with extraordinary skills that helped to end World War II.</p>
-    //      <p>Set in 1952, Susan, Millie, Lucy and Jean have returned to their
-    //        normal lives, modestly setting aside the part they played in
-    //        producing crucial intelligence, which helped the Allies to victory
-    //        and shortened the war. When Susan discovers a hidden code behind an
-    //        unsolved murder she is met by skepticism from the police. She
-    //        quickly realises she can only begin to crack the murders and bring
-    //        the culprit to justice with her former friends.</p>`,
-    //   image:
-    //       "http://static.tvmaze.com/uploads/images/medium_portrait/147/369403.jpg"
-    // }
