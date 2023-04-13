@@ -100,8 +100,8 @@ async function getEpisodesOfShow(id) {
 
 /** Write a clear docstring for this function... */
 
-async function displayEpisodes() {
-  const episodes = await getEpisodesOfShow(45970)
+async function displayEpisodes(showId) {
+  const episodes = await getEpisodesOfShow(showId);
 
   for(let episode of episodes) {
     const $newEpisode = $(`<li>${episode.name} (season ${episode.season}, episode ${episode.number})</li>`);
@@ -109,6 +109,20 @@ async function displayEpisodes() {
   }
 
 }
+
+function handleEpisodeClick(e) {
+  console.log("target ==>", e.target);
+  $episodesArea.css('display', 'static');
+
+  const episodesOfShow = getEpisodesOfShow(526)
+  displayEpisodes(episodesOfShow);
+  // displayEpisodes(getEpisodesOfShow(`${}`));
+}
+
+const $episodesBtn = $('.Show-getEpisodes');
+
+
+$showsList.on('click', handleEpisodeClick);
 
 // add other functions that will be useful / match our structure & design
 // {
