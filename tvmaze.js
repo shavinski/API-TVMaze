@@ -1,9 +1,12 @@
 "use strict";
 
+const MISSING_IMAGE_URL = "https://tinyurl.com/missing-tv";
+const TVMAZE_API_URL = "http://api.tvmaze.com/";
+
 const $showsList = $("#showsList");
+const $episodesList = $("#episodesList");
 const $episodesArea = $("#episodesArea");
 const $searchForm = $("#searchForm");
-const TV_MAZE_URL = "http://api.tvmaze.com"
 
 
 /** Given a search term, search for tv shows that match that query.
@@ -13,27 +16,33 @@ const TV_MAZE_URL = "http://api.tvmaze.com"
  *    (if no image URL given by API, put in a default image URL)
  */
 
-function findImgNull(showsData) {
-
-  for(let show of showsData) {
-    const imageNotFoundUrl = 'https://cdn-icons-png.flaticon.com/512/2748/2748558.png';
-
-    if(show.show.image === null) {
-      show.show.image = {medium: imageNotFoundUrl};
-    }
-  }
-
-  return showsData;
-}
-
 async function getShowsByTerm(term) {
-  const showsData = await axios.get(`${TV_MAZE_URL}/search/shows`, {params: {
-      q: term
-    }
+  const response = await axios({
+    baseURL: TVMAZE_API_URL,
+    url: "search/shows",
+    method: "GET",
+    params: {
+      q: term,
+    },
   });
 
-  // console.log('showsData', findImgNull(showsData.data));
-  return findImgNull(showsData.data)
+  return response.data.map(scoreAndShow => {
+    const show = scoreAndShow.show;
+    return {
+      id: show.id,
+      name: show.name,
+      summary: show.summary,
+      image: show.image ? show.image.medium : MISSING_IMAGE_URL,
+    };
+    // another possibility, using the "destructuring" syntax:
+    // const {id, name, summary, image } = show;
+    // return {
+    //   id,
+    //   name,
+    //   summary,
+    //   image: image ? image.medium : MISSING_IMAGE_URL,
+    // };
+  });
 }
 
 
@@ -47,25 +56,21 @@ function displayShows(shows) {
 
   for (const show of shows) {
     const $show = $(`
-        <div data-show-id="${show.show.id}" class="Show col-md-12 col-lg-6 mb-4">
-         <div class="media">
-           <img
-              src="${show.show.image.medium}"
-              alt="Bletchly Circle San Francisco"
-              class="w-25 me-3">
-           <div class="media-body">
-             <h5 class="text-primary">${show.show.name}</h5>
-             <div><small>${show.show.summary}</small></div>
-             <button class="btn btn-outline-light btn-sm Show-getEpisodes">
-               Episodes
-             </button>
+        <div data-show-id="${show.id}" class="Show col-md-12 col-lg-6 mb-4">
+           <div class="media">
+             <img src="${show.image}" alt="${show.name}" class="w-25 me-3">
+             <div class="media-body">
+               <h5 class="text-primary">${show.name}</h5>
+               <div><small>${show.summary}</small></div>
+               <button class="btn btn-outline-light btn-sm Show-getEpisodes">
+                 Episodes
+               </button>
+             </div>
            </div>
-         </div>
-       </div>
+        </div>
       `);
 
     $showsList.append($show);
-    console.log(show.show.id)
   }
 }
 
@@ -92,37 +97,82 @@ $searchForm.on("submit", async function handleSearchForm (evt) {
  *      { id, name, season, number }
  */
 
-async function getEpisodesOfShow(id) {
-  const episodeInfo = await axios.get(`${TV_MAZE_URL}/shows/${id}/episodes`);
+async function getEpisodesOfShow(showId) {
+  const response = await axios({
+    baseURL: TVMAZE_API_URL,
+    url: `shows/${showId}/episodes`,
+    method: "GET",
+  });
 
-  return episodeInfo.data
+  return response.data.map(ep => ({
+    id: ep.id,
+    name: ep.name,
+    season: ep.season,
+    number: ep.number,
+  }));
+
+  // similar to above, we could also do this with "destructuring" and
+  // "object literal shorthand":
+  //
+  // return response.data.map(({id, name, season, number}) =>
+  //     ({id, name, season, number})
+  // );
 }
 
-/** Write a clear docstring for this function... */
 
-async function displayEpisodes(showId) {
-  const episodes = await getEpisodesOfShow(showId);
+/** Given list of episodes, create markup for each and append to DOM
+ *
+ * An episode is {id, name, season, number}.
+ * */
 
-  for(let episode of episodes) {
-    const $newEpisode = $(`<li>${episode.name} (season ${episode.season}, episode ${episode.number})</li>`);
-    $episodesArea.append($newEpisode);
+function displayEpisodes(episodes) {
+  $episodesList.empty();
+
+  for (const episode of episodes) {
+    const $episode = $(
+        `<li>
+         ${episode.name}
+         (season ${episode.season}, episode ${episode.number})
+       </li>
+      `);
+
+    $episodesList.append($episode);
   }
 
+  $episodesArea.show();
 }
 
-function handleEpisodeClick(e) {
-  console.log("target ==>", e.target);
-  $episodesArea.css('display', 'static');
 
-  const episodesOfShow = getEpisodesOfShow(526)
-  displayEpisodes(episodesOfShow);
-  // displayEpisodes(getEpisodesOfShow(`${}`));
+/** Handle click on episodes button: get episodes for show and display */
+
+async function retrieveEpisodesAndDisplay(showId) {
+  const episodes = await getEpisodesOfShow(showId);
+  displayEpisodes(episodes);
 }
 
-const $episodesBtn = $('.Show-getEpisodes');
 
+// note that:
+// - we're using "event delegation", since the buttons *won't exist* on page
+//   load, only after they've search for shows
+// - our "discriminant" for this event handler is the class Show-getEpisodes;
+//   this is much better than "match-all-buttons", since that would be a clear
+//   bug if anyone ever added any other kind of button to the app!
 
-$showsList.on('click', handleEpisodeClick);
+$showsList.on(
+    "click",
+    ".Show-getEpisodes",
+    async function handleEpisodeClick(evt) {
+  // here's one way to get the ID of the show: search "closest" ancestor
+  // with the class of .Show (which is put onto the enclosing div, which
+  // has the .data-show-id attribute).
+  const showId = Number(
+      $(evt.target).closest(".Show").data("show-id")
+  );
 
-// add other functions that will be useful / match our structure & design
-// {
+  // here's another way to get the ID of the show: search "closest" ancestor
+  // that has an attribute of 'data-show-id'. This is called an "attribute
+  // selector", and it's part of CSS selectors worth learning.
+  // const showId = $(evt.target).closest("[data-show-id]").data("show-id");
+
+  await retrieveEpisodesAndDisplay(showId);
+});
