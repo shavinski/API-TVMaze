@@ -95,23 +95,17 @@ $searchForm.on("submit", async function handleSearchForm (evt) {
 async function getEpisodesOfShow(id) {
   const episodeInfo = await axios.get(`${TV_MAZE_URL}/shows/${id}/episodes`);
 
-  console.log('episodeInfo ==>', episodeInfo.data)
   return episodeInfo.data
 }
 
 /** Write a clear docstring for this function... */
 
-function displayEpisodes(episodes) { 
-  // episodes ==> [{},{}....]
-  // loop through array
-    // each iteration we create a list item 
-      // `Episode name (season 1, number 1)`
-  console.log('episodes==>', episodes[0]);
-  console.log('episodes==>', episodes);
+async function displayEpisodes() {
+  const episodes = await getEpisodesOfShow(45970)
+
   for(let episode of episodes) {
-    console.log(episode);
-    const $newEpisode = $("<li>");
-    console.log($newEpisode);
+    const $newEpisode = $(`<li>${episode.name} (season ${episode.season}, episode ${episode.number})</li>`);
+    $episodesArea.append($newEpisode);
   }
 
 }
