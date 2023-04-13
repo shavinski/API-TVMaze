@@ -26,6 +26,8 @@ async function getShowsByTerm(term) {
     },
   });
 
+
+  // check gitHub
   return response.data.map(scoreAndShow => {
     const show = scoreAndShow.show;
     return {
